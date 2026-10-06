@@ -46,6 +46,8 @@ int autosync_selecionar(AutoSync *sync, int slot, LegendaDocumento *doc);
 int autosync_solicitar(AutoSync *sync, int slot, LegendaDocumento *referencia,
                        const AutoSyncConfig *config);
 void autosync_cancelar(AutoSync *sync, int slot);
+// Cancel pending work atomically; preserve an accepted automatic offset.
+void autosync_cancelar_pendente(AutoSync *sync, int slot);
 int autosync_manual(AutoSync *sync, int slot, int atrasoMs);
 int autosync_offset_ms(AutoSync *sync, int slot);
 void autosync_desfazer(AutoSync *sync, int slot); /* preserves manual offset */

@@ -34,6 +34,10 @@ static const char *motivoAudioTexto(LegSyncMotivo m) {
     case LEGSYNC_M_AUD_PASSTHROUGH: return i18n("Por \xc3\xa1udio: indispon\xc3\xadvel com passthrough ligado");
     case LEGSYNC_M_AUD_SEM_AUDIO:   return i18n("Por \xc3\xa1udio: sem \xc3\xa1udio decodificado");
     case LEGSYNC_M_AUD_SEM_FALA:    return i18n("Por \xc3\xa1udio: sem falas claras; nada foi alterado");
+    case LEGSYNC_M_AUD_MODEL: return i18n("Por áudio: modelo não está pronto; verifique os ajustes");
+    case LEGSYNC_M_AUD_RUNTIME: return i18n("Por áudio: Silero indisponível nesta versão");
+    case LEGSYNC_M_AUD_SOURCE: return i18n("Por áudio: fonte ou faixa de áudio não suportada");
+    case LEGSYNC_M_AUD_DECODER: return i18n("Por áudio: análise interrompida; nada foi alterado");
     default: return NULL;
   }
 }

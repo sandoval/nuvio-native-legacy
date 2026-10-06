@@ -101,6 +101,7 @@ static void testeAlinhamento(void) {
 
 // --- sessao inteira ---------------------------------------------------------------------------
 static unsigned agora = 1000;
+static int skipUi;
 static const char *URL = "https://cdn.example/filme.mkv";
 static void passo(int sensivel) { agora += 50; legsync_passo(URL, 100.0, 60.0, sensivel, agora); }
 
@@ -112,7 +113,7 @@ static void tocar(double de, double ate, double offset, int tipo) {
     sint_pcm(b, 960, t, offset, tipo);
     while (audsync_teste_livre() < 960) usleep(100);
     audsync_pcm(b, 960, (int64_t)llround(t * 1e6));
-    if (k % 16 == 0) passo(0);
+    if (!skipUi && k % 16 == 0) passo(0);
   }
 }
 
@@ -180,6 +181,10 @@ static void testeSessao(void) {
   assert(!(v.acoes & LEGSYNC_ACAO_OUTRA) && (v.acoes & LEGSYNC_ACAO_DESFAZER));
   assert(atomic_load(&tapLigado) == 0);     // window done: tap disarmed
   assert(legsync_offset_ms(300) == 300 + v.offsetAutoMs);
+  legsync_audio_habilitar(0);
+  passo(0); assert(legsync_offset_ms(300) == 300 + v.offsetAutoMs);
+  assert(legsync_visao(0).acoes & LEGSYNC_ACAO_DESFAZER);
+  legsync_audio_habilitar(1);
   assert(legsync_acao(LEGSYNC_ACAO_DESFAZER));
   assert(legsync_offset_ms(300) == 300);
   assert(audsync_pcm((int16_t[4]){ 0 }, 4, 0) == 0);   // late PCM after the window: ignored
@@ -207,6 +212,16 @@ static void testeSessao(void) {
   legsync_texto(&v, txt, sizeof txt);
   assert(strstr(txt, "sem falas claras"));
   assert(v.acoes & LEGSYNC_ACAO_AUDIO);       // can listen again
+
+  CASO("cancel: completed audio document cannot survive disable");
+  assert(legsync_acao(LEGSYNC_ACAO_AUDIO));
+  skipUi=1; tocar(100, 100 + AUDSYNC_ALVO_SEG + 1, 2.5, SINT_FALA | SINT_RUIDO); skipUi=0;
+  for (int i=0;i<20000 && audsync_status().fase!=AUDSYNC_PRONTO;i++) usleep(1000);
+  assert(audsync_status().fase==AUDSYNC_PRONTO);
+  legsync_audio_habilitar(0); passo(0);
+  for (int i=0;i<50;i++) { passo(0); usleep(1000); }
+  assert(audsync_status().fase==AUDSYNC_PARADO && legsync_offset_ms(0)==0);
+  legsync_audio_habilitar(1);
 
   CASO("cancel: player close");
   assert(legsync_acao(LEGSYNC_ACAO_AUDIO)); tocar(100, 110, 0, SINT_FALA | SINT_RUIDO);

@@ -2075,15 +2075,18 @@ void rede_tls_fechar(RedeTls *t) {
 }
 
 
+static unsigned long redeAgoraMs(void);
+
 /* One response, bounded independently of the generic download TLS state. */
 typedef struct {
   Balde body;
   int status, valid, overflow, range_headers;
   int64_t start, end, total, requested, limit;
   volatile int *cancel;
-} DtsRange;
+  RedeRangeBudget *budget;
+} RedeRange;
 /* Reject values outside int64_t instead of relying on overflowing scanf. */
-static int dtsRangeNumber(const char **text, int64_t *value) {
+static int redeRangeNumber(const char **text, int64_t *value) {
   const char *p = *text;
   int64_t n = 0;
   if (*p < '0' || *p > '9') return 0;
@@ -2096,7 +2099,7 @@ static int dtsRangeNumber(const char **text, int64_t *value) {
   return 1;
 }
 /* Credential stripping must compare complete origins, never truncations. */
-static int dtsRangeOrigin(const char *url, char *origin, size_t capacity) {
+static int redeRangeOrigin(const char *url, char *origin, size_t capacity) {
   const char *authority = strstr(url, "://");
   size_t n;
   if (!authority) return 0;
@@ -2106,8 +2109,8 @@ static int dtsRangeOrigin(const char *url, char *origin, size_t capacity) {
   memcpy(origin, url, n); origin[n] = 0;
   return 1;
 }
-static size_t dtsRangeHeader(void *data, size_t size, size_t count, void *user) {
-  DtsRange *r = user;
+static size_t redeRangeHeader(void *data, size_t size, size_t count, void *user) {
+  RedeRange *r = user;
   size_t n;
   const char *p = data;
   char line[192];
@@ -2126,24 +2129,31 @@ static size_t dtsRangeHeader(void *data, size_t size, size_t count, void *user) 
     while (*value == ' ' || *value == '\t') value++;
     if (strncasecmp(value, "bytes ", 6)) return n;
     value += 6;
-    if (!dtsRangeNumber(&value, &lo) || *value != '-') return n;
+    if (!redeRangeNumber(&value, &lo) || *value != '-') return n;
     value++;
-    if (!dtsRangeNumber(&value, &hi) || *value != '/' || hi < lo) return n;
+    if (!redeRangeNumber(&value, &hi) || *value != '/' || hi < lo) return n;
     value++;
     if (*value == '*') value++;
-    else if (!dtsRangeNumber(&value, &total) || total <= hi) return n;
+    else if (!redeRangeNumber(&value, &total) || total <= hi) return n;
     while (*value == ' ' || *value == '\t' || *value == '\r' || *value == '\n') value++;
     if (*value) return n;
     r->start = lo; r->end = hi; r->total = total; r->valid = 1;
   }
   return n;
 }
-static size_t dtsRangeBody(void *data, size_t size, size_t count, void *user) {
-  DtsRange *r = user;
+static size_t redeRangeBody(void *data, size_t size, size_t count, void *user) {
+  RedeRange *r = user;
   size_t n;
   char *next;
   if (size && count > SIZE_MAX / size) return 0;
   n = size * count;
+  if (r->budget) {
+    r->budget->body_bytes += n;
+    /* libcurl body chunks are at most CURL_MAX_WRITE_SIZE (16 KiB).
+     * Reserve one callback so the bytes already received never cross the cap. */
+    if (r->budget->max_body_bytes < 32768 ||
+        r->budget->body_bytes > r->budget->max_body_bytes - 16384) return 0;
+  }
   if (r->cancel && __atomic_load_n(r->cancel, __ATOMIC_RELAXED)) return 0;
   if (r->status >= 300 && r->status < 400) return n;
   if (r->status != 206 || !r->valid || r->start != r->requested ||
@@ -2163,13 +2173,14 @@ static size_t dtsRangeBody(void *data, size_t size, size_t count, void *user) {
   if (r->body.p) r->body.p[r->body.n] = 0;
   return n;
 }
-static int dtsRangeProgress(void *user, long long dt, long long dn,
+static int redeRangeProgress(void *user, long long dt, long long dn,
                             long long ut, long long un) {
-  DtsRange *r = user;
+  RedeRange *r = user;
   (void)dt; (void)dn; (void)ut; (void)un;
+  if (r->budget && redeAgoraMs() >= r->budget->deadline_ms) return 1;
   return r->cancel && __atomic_load_n(r->cancel, __ATOMIC_RELAXED);
 }
-static void *dtsRangeHeaders(const char *raw, int public_only) {
+static void *redeRangeHeaders(const char *raw, int public_only) {
   char *copy, *line, *ctx = NULL;
   void *list = NULL;
   if (!raw || !*raw || !slist_append) return NULL;
@@ -2191,10 +2202,10 @@ static void *dtsRangeHeaders(const char *raw, int public_only) {
   free(copy);
   return list;
 }
-char *rede_baixar_trecho64_cab(const char *url, const char *headers,
+char *rede_baixar_trecho64_budget(const char *url, const char *headers,
                               int64_t start, int64_t end, long *size,
                               int64_t *total, int *status,
-                              volatile int *cancelled) {
+                              volatile int *cancelled, RedeRangeBudget *budget) {
   char current[8192], range[64], origin[128];
   int hop, public_only = 0;
   if (size) *size = 0;
@@ -2204,20 +2215,37 @@ char *rede_baixar_trecho64_cab(const char *url, const char *headers,
       end - start >= 4 * 1024 * 1024 || !abrir()) return NULL;
   if (strncmp(url, "http://", 7) && strncmp(url, "https://", 8)) return NULL;
   snprintf(current, sizeof current, "%s", url);
-  if (!dtsRangeOrigin(url, origin, sizeof origin)) return NULL;
+  if (!redeRangeOrigin(url, origin, sizeof origin)) return NULL;
   snprintf(range, sizeof range, "%lld-%lld", (long long)start, (long long)end);
   for (hop = 0; hop < 6; hop++) {
-    DtsRange r;
+    RedeRange r;
     void *c, *list;
     int result;
     long http = 0;
     char redirected[8192] = "", *next = NULL;
     if (cancelled && __atomic_load_n(cancelled, __ATOMIC_RELAXED)) return NULL;
-    memset(&r, 0, sizeof r);
+    if (budget) {
+      /* Count redirect requests too; rate-limit at the actual HTTP hop. */
+      while (redeAgoraMs() < budget->next_request_ms) {
+        if ((cancelled && __atomic_load_n(cancelled, __ATOMIC_RELAXED)) ||
+            redeAgoraMs() >= budget->deadline_ms) return NULL;
+        struct timespec pause = {0, 10000000}; nanosleep(&pause, NULL);
+      }
+      if (redeAgoraMs() >= budget->deadline_ms || budget->body_bytes >= budget->max_body_bytes)
+        return NULL;
+      budget->next_request_ms = redeAgoraMs() + 500;
+      budget->requests++;
+    }
+    memset(&r, 0, sizeof r); r.budget = budget;
     r.requested = start; r.limit = end - start + 1; r.total = -1; r.cancel = cancelled;
     c = pegarHandle(current);
     if (!c) return NULL;
-    opcoesComuns(c, 15000);
+    unsigned long current_ms = redeAgoraMs();
+    if (budget && current_ms >= budget->deadline_ms) { soltarHandleR(c, 0, current);return NULL; }
+    unsigned long timeout = budget ? budget->deadline_ms - current_ms : 15000;
+    if (timeout > 15000) timeout = 15000;
+    if (!timeout) timeout = 1;
+    opcoesComuns(c, timeout);
     /* DTS requests may carry provider credentials: always authenticate TLS,
      * independent of the legacy generic download defaults. */
     curl_setopt(c, OPT_SSL_VERIFYPEER, (long)1);
@@ -2226,14 +2254,14 @@ char *rede_baixar_trecho64_cab(const char *url, const char *headers,
     curl_setopt(c, OPT_URL, current);
     curl_setopt(c, OPT_RANGE, range);
     curl_setopt(c, OPT_FOLLOWLOCATION, (long)0);
-    curl_setopt(c, OPT_WRITEFUNCTION, dtsRangeBody);
+    curl_setopt(c, OPT_WRITEFUNCTION, redeRangeBody);
     curl_setopt(c, OPT_WRITEDATA, &r);
-    curl_setopt(c, OPT_HEADERFUNCTION, dtsRangeHeader);
+    curl_setopt(c, OPT_HEADERFUNCTION, redeRangeHeader);
     curl_setopt(c, OPT_HEADERDATA, &r);
-    curl_setopt(c, OPT_XFERINFOFUNCTION, dtsRangeProgress);
+    curl_setopt(c, OPT_XFERINFOFUNCTION, redeRangeProgress);
     curl_setopt(c, OPT_XFERINFODATA, &r);
     curl_setopt(c, OPT_NOPROGRESS, (long)0);
-    list = dtsRangeHeaders(headers, public_only);
+    list = redeRangeHeaders(headers, public_only);
     if (list) curl_setopt(c, OPT_HTTPHEADER, list);
     result = curl_perform(c);
     if (curl_getinfo) {
@@ -2250,7 +2278,7 @@ char *rede_baixar_trecho64_cab(const char *url, const char *headers,
       char host[128];
       free(r.body.p);
       if (strncmp(redirected, "http://", 7) && strncmp(redirected, "https://", 8)) return NULL;
-      if (!dtsRangeOrigin(redirected, host, sizeof host)) return NULL;
+      if (!redeRangeOrigin(redirected, host, sizeof host)) return NULL;
       if (strcmp(host, origin)) public_only = 1;
       /* Never send credentials over a redirect from HTTPS to HTTP. */
       if (!strncmp(current, "https://", 8) && !strncmp(redirected, "http://", 7)) return NULL;
@@ -2270,6 +2298,11 @@ char *rede_baixar_trecho64_cab(const char *url, const char *headers,
   return NULL;
 }
 
+char *rede_baixar_trecho64_cab(const char *u, const char *h, int64_t s, int64_t e,
+                              long *n, int64_t *t, int *st, volatile int *c) {
+  return rede_baixar_trecho64_budget(u,h,s,e,n,t,st,c,NULL);
+}
+
 #endif  /* __EMSCRIPTEN__ */
 
 #ifdef __EMSCRIPTEN__
@@ -2280,6 +2313,11 @@ char *rede_baixar_trecho64_cab(const char *u, const char *h, int64_t s, int64_t 
   if (st) *st = 0;
   return NULL;
 }
+char *rede_baixar_trecho64_budget(const char *u,const char *h,int64_t s,int64_t e,
+                               long *n,int64_t *t,int *st,volatile int *c,RedeRangeBudget *b) {
+  (void)b; return rede_baixar_trecho64_cab(u,h,s,e,n,t,st,c);
+}
+
 #endif
 
 static unsigned long redeAgoraMs(void) {

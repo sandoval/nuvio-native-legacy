@@ -351,6 +351,16 @@ void autosync_cancelar(AutoSync *s,int k) {
   slot->epoch++;slot->pendente=0;slot->resultado.estado=AUTOSYNC_CANCELLED;
   slot->resultado.motivo=AUTOSYNC_SESSION_CHANGED;pthread_mutex_unlock(&s->trava);
 }
+void autosync_cancelar_pendente(AutoSync *s,int k) {
+  if(!valido(s,k))return;
+  pthread_mutex_lock(&s->trava);Slot *slot=&s->slots[k];
+  slot->epoch++;slot->pendente=0;
+  if(slot->resultado.estado!=AUTOSYNC_ACCEPTED) {
+    slot->resultado.estado=AUTOSYNC_CANCELLED;
+    slot->resultado.motivo=AUTOSYNC_SESSION_CHANGED;
+  }
+  pthread_mutex_unlock(&s->trava);
+}
 int autosync_manual(AutoSync *s,int k,int atrasoMs) {
   if(!valido(s,k)||atrasoMs < -120000||atrasoMs>120000)return 0;
   pthread_mutex_lock(&s->trava);s->slots[k].manual=atrasoMs;pthread_mutex_unlock(&s->trava);return 1;

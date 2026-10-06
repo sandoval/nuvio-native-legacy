@@ -2,6 +2,9 @@
 #include "legsync.h"
 #include "autosync.h"
 #include "audsync.h"
+#ifndef AUDSYNC_LEGACY_DSP
+#include "audmodel.h"
+#endif
 #include "legenda.h"
 #include <pthread.h>
 #include <stdio.h>
@@ -155,6 +158,9 @@ void legsync_destruir(void) {
   legenda_documento_liberar(a); legenda_documento_liberar(b);
   pthread_mutex_lock(&M); pararAudio(); pthread_mutex_unlock(&M);
   audsync_destruir();
+#ifndef AUDSYNC_LEGACY_DSP
+  audmodel_destroy();
+#endif
 }
 
 // --- PRINCIPAL ------------------------------------------------------------------
@@ -318,6 +324,8 @@ static LegSyncMotivo motivoAudio(void) {
     case AUDSYNC_CAP_OK: return LEGSYNC_M_NENHUM;
     case AUDSYNC_CAP_PASSTHROUGH: return LEGSYNC_M_AUD_PASSTHROUGH;
     case AUDSYNC_CAP_SEM_AUDIO: return LEGSYNC_M_AUD_SEM_AUDIO;
+    case AUDSYNC_CAP_MODEL: return LEGSYNC_M_AUD_MODEL;
+    case AUDSYNC_CAP_RUNTIME: return LEGSYNC_M_AUD_RUNTIME;
     default: return LEGSYNC_M_AUD_PLATAFORMA;
   }
 }
@@ -328,6 +336,11 @@ void legsync_audio_habilitar(int ligado) {
     // Desligado no meio: para a escuta; um offset ja aceito fica (desfazer e
     // explicito), mas nada novo e pedido.
     if (L.audPedido) { audsync_cancelar(); L.audPedido = 0; }
+    if (L.audUltimo) {
+      autosync_cancelar_pendente(L.sync, 0);
+      L.reenviar = 0; L.querModo = -1;
+      if (L.autoEtapa == 2 && L.autoFase == 1) { L.autoFase = 0; L.autoEtapa = 9; }
+    }
     L.audFalha = AUDSYNC_M_OK;
   }
   L.audLigado = ligado != 0;
@@ -599,6 +612,10 @@ static LegSyncMotivo motivoRef(LegRefMotivo m) {
 static LegSyncMotivo motivoFalhaAudio(AudSyncMotivo m) {
   switch (m) {
     case AUDSYNC_M_PLATAFORMA: return LEGSYNC_M_AUD_PLATAFORMA;
+    case AUDSYNC_M_MODEL: return LEGSYNC_M_AUD_MODEL;
+    case AUDSYNC_M_RUNTIME: return LEGSYNC_M_AUD_RUNTIME;
+    case AUDSYNC_M_SOURCE: case AUDSYNC_M_TRACK: return LEGSYNC_M_AUD_SOURCE;
+    case AUDSYNC_M_BUDGET: case AUDSYNC_M_DECODER: return LEGSYNC_M_AUD_DECODER;
     case AUDSYNC_M_PASSTHROUGH: return LEGSYNC_M_AUD_PASSTHROUGH;
     case AUDSYNC_M_SEM_FALA: case AUDSYNC_M_CONTINUA: return LEGSYNC_M_AUD_SEM_FALA;
     default: return LEGSYNC_M_CONFIANCA;

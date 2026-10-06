@@ -98,7 +98,7 @@ void rede_job_soltar(RedeJob *job);
 void rede_job_cancelar(RedeJob *job);
 RedeErro rede_job_estado(RedeJob *job);
 
-/* Bounded, validated byte ranges for the local DTS demuxer. Unlike the old
+/* Bounded, validated byte ranges for independent local demuxers. Unlike the old
  * long-offset API this works past 2 GiB on ARM. Only matching HTTP 206 bodies
  * are accepted; total is -1 when unknown. Caller frees the returned buffer.
  * Raw headers use one Name: value per line. Credentials are stripped when a
@@ -107,6 +107,17 @@ char *rede_baixar_trecho64_cab(const char *url, const char *headers,
                               int64_t start, int64_t end, long *size,
                               int64_t *total, int *status,
                               volatile int *cancelled);
+
+/* Optional caller-owned budget, worker-only. Monotonic milliseconds, absolute
+ * deadline; counts every received body (including rejected/redirect payloads)
+ * and every HTTP hop. Nonzero budget enforces >=500 ms between requests.
+ * cancel remains concurrent-safe; DTS legacy wrapper keeps its old behavior. */
+typedef struct {
+  uint64_t body_bytes, max_body_bytes, requests;
+  unsigned long deadline_ms, next_request_ms;
+} RedeRangeBudget;
+char *rede_baixar_trecho64_budget(const char *, const char *, int64_t, int64_t,
+                               long *, int64_t *, int *, volatile int *, RedeRangeBudget *);
 
 typedef struct {
   int status;          // 0 = transporte sem resposta

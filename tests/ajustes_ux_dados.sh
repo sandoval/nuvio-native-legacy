@@ -10,8 +10,15 @@ for source in src/*.c src/dts/*.c; do
 done
 binary="$(mktemp /tmp/nuvio-ajustes-ux-dados.XXXXXX)"
 trap 'rm -f "$binary"' EXIT
-cc "${sources[@]}" tests/ajustes_ux_dados.c -Isrc -o "$binary" \
-  -O1 -g -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
-  -L/opt/homebrew/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lz -framework OpenGL \
-  -Wno-deprecated-declarations -Wno-macro-redefined
+if [ "$(uname -s)" = Linux ]; then
+  read -r -a dep_cflags <<< "$(pkg-config --cflags sdl2 SDL2_image SDL2_ttf glesv2 egl zlib)"
+  read -r -a dep_libs <<< "$(pkg-config --libs sdl2 SDL2_image SDL2_ttf glesv2 egl zlib)"
+  cc "${sources[@]}" tests/ajustes_ux_dados.c -Isrc -o "$binary" -O1 -g \
+    -DNV_LINUX_DESKTOP "${dep_cflags[@]}" "${dep_libs[@]}" -ldl -pthread -lm
+else
+  cc "${sources[@]}" tests/ajustes_ux_dados.c -Isrc -o "$binary" \
+    -O1 -g -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
+    -L/opt/homebrew/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lz -framework OpenGL \
+    -Wno-deprecated-declarations -Wno-macro-redefined
+fi
 "$binary"

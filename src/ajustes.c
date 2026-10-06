@@ -7,6 +7,8 @@
 #include "ajustes_ux.h"
 #include "trailerfonte.h"   // NV_TRAILER_CONTINUA_DETALHE, nas ajudas do trailer
 #include "dados.h"
+#include "audmodel.h"
+#include "legsync.h"
 #include "enquete.h"
 #include "stalker.h"
 #include "xtream.h"
@@ -410,6 +412,7 @@ typedef enum {
   // Formato do relogio (2.0, pedido de usuario Samsung): 24 h ou 12 h com
   // AM/PM, em toda hora DE TELA (relogio.h). LOCAL. No fim: posicional.
   AJ_RELOGIO_12H,
+  AJ_AUDMODEL_RETRY, AJ_AUDMODEL_REMOVE,
   AJ_N
 } OpcaoId;
 
@@ -1129,7 +1132,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Tamanho dos ajustes", V_TAMANHO_AJUSTES, 3),
   ESC("Esconder logo durante o trailer", V_LIGA, 2),
   ESC("Idioma da legenda secundária",    V_LINGUA, 2),
-  ESC("Sincronia por áudio",             V_LIGA, 2),
+  ESC("Sincronia automática da legenda por áudio", V_LIGA, 2),
   ESC("Cache de seek em disco",          V_CACHE_SEEK, 4),
   ESC("Zoom do trailer (experimental)",  V_LIGA, 2),   // local: trailerZoomTpkLocal (.tpk)
   ACAO("Plugins"),
@@ -1162,6 +1165,8 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Estilo do descanso",              V_DESCANSO_ESTILO, 3),  // local: descansoEstiloLocal
   ESC("Títulos da vitrine",              V_DESCANSO_FONTE, 2),   // local: descansoFonteLocal
   ESC("Formato do relógio",              V_RELOGIO_12H, 2),      // local: relogio12hLocal
+  ACAO("Tentar baixar o modelo novamente"),
+  ACAO("Remover modelo baixado"),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -1358,6 +1363,7 @@ static const char *CHAVE[] = {
   "manterVideoLocal",
   "descansoEstiloLocal", "descansoFonteLocal",
   "relogio12hLocal",
+  "-audmodelRetry", "-audmodelRemove",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -1776,11 +1782,7 @@ float ajustes_tamanho_ajustes(void) {
 }
 int ajustes_esconder_logo_trailer(void) { return lig(AJ_LOGO_TRAILER); }
 int ajustes_trailer_zoom_tpk(void) { return lig(AJ_TRAILER_ZOOM_TPK); }   // 1 = Ligado
-#ifdef NV_ANDROID
 int ajustes_legenda_sync_audio(void) { return lig(AJ_LEG_SYNC_AUDIO); }
-#else
-int ajustes_legenda_sync_audio(void) { return 0; }   // escondida fora do Android
-#endif
 int ajustes_cache_seek_mb(void) {
   static const int MB[] = { 0, 256, 512, 1024 };
   int v = valor[AJ_CACHE_SEEK];
@@ -2893,6 +2895,7 @@ void ajustes_dir(const char *dir) {
   aplicarIdioma(AJ_AUD_LINGUA);
   txt_definir_fonte_interface((TxtFamilia)valor[AJ_FONTE_UI]);
   gfx_escala_ui_definir(ajustes_tamanho_ui());
+  audmodel_enable(ajustes_legenda_sync_audio(), 0);
   // O teto de imagens escolhido vale desde o arranque, nao so quando a tela
   // de Ajustes e aberta. tex_iniciar ja rodou (main.c); isto so o corrige.
   if (valor[AJ_TEX_MB] > 0) tex_definir_orcamento_mb(ajustes_tex_mb());
@@ -4413,6 +4416,9 @@ static const char *textoLeitura(int op) {
 // de a linha sumir.
 static int inativa(int op) {
   switch (op) {
+    case AJ_LEG_SYNC_AUDIO: return !audmodel_supported() && !ajustes_legenda_sync_audio();
+    case AJ_AUDMODEL_RETRY: return !audmodel_supported() || !ajustes_legenda_sync_audio() || audmodel_status().state != AUDMODEL_FAILED;
+    case AJ_AUDMODEL_REMOVE: return !dados_model_persistente();
     case AJ_VIDRO_CONTORNO: case AJ_VIDRO_OPAC: case AJ_VIDRO_FOSCO: return !lig(AJ_VIDRO);
     case AJ_RAIL:         return ajustes_rail_moderna();
     case AJ_RAIL_BLUR:    return !ajustes_rail_moderna();
@@ -4577,6 +4583,27 @@ static void focarOpcao(int op) {
 // separado de proposito: as duas perguntas sao diferentes e juntas viram um
 // paragrafo que ninguem le do sofa.
 static const char *ajudaOpcao(int op) {
+  if (op == AJ_LEG_SYNC_AUDIO) {
+    static char audioHelp[512];
+    if (!audmodel_supported()) {
+#ifdef NUVIO_SILERO_MINIMAL
+      return "O modelo de fala ainda não está disponível para baixar nesta versão.";
+#else
+      return "O detector de fala local não está disponível nesta versão.";
+#endif
+    }
+    AudModelStatus status = audmodel_status();
+    if (status.state == AUDMODEL_FAILED) {
+      snprintf(audioHelp, sizeof audioHelp, i18n("Falha: %s. Use Tentar baixar o modelo novamente."), i18n(status.error));
+      return audioHelp;
+    }
+    if (status.state == AUDMODEL_DOWNLOADING) return "Baixando o modelo de fala. Desligue este ajuste para cancelar.";
+    if (status.state == AUDMODEL_VERIFYING) return "Verificando o modelo de fala…";
+    snprintf(audioHelp, sizeof audioHelp, i18n("Processa as falas nesta TV, sem transcrição. Ao ligar, baixa um modelo de %u bytes. A correção só é aplicada quando há confiança suficiente."), AUDMODEL_BYTES);
+    return audioHelp;
+  }
+  if (op == AJ_AUDMODEL_RETRY) return "Tenta baixar e verificar o modelo de fala novamente.";
+  if (op == AJ_AUDMODEL_REMOVE) return "Desliga a sincronia por áudio e remove o modelo desta TV.";
   if (op == AJ_ICONE_APP) return "Escolha uma marca alternativa para o Nuvio nesta TV. Um agradecimento a quem apoia o projeto.";
   if (inativa(op)) {
     if (op == AJ_VIDRO_CONTORNO) return "Ative a interface de vidro para ajustar o contorno.";
@@ -4636,7 +4663,6 @@ static const char *ajudaOpcao(int op) {
     // --- Reproducao
     case AJ_QUALIDADE: return "Define a preferência de resolução. A disponibilidade depende das fontes do addon.";
     case AJ_DV: case AJ_ATMOS: return "Preferência para fontes compatíveis. O formato disponível também depende do arquivo e da TV.";
-    case AJ_LEG_SYNC_AUDIO: return "Compara as falas do áudio com a legenda externa para acertar o atraso. Só onde o player entrega o áudio decodificado e sem passthrough; vale só nesta TV.";
     case AJ_LEG_LINGUA2: return "Segunda legenda, mostrada no alto da tela junto com a principal. Só arquivos SRT/VTT dos addons. \"Da conta\" segue o que está no seu perfil.";
     case AJ_LEG2_POS: return "No topo, a segunda legenda fica no alto da tela. Junto da principal, ela fica logo acima da principal, no pé da tela.";
     case AJ_LEG2_TAMANHO: case AJ_LEG2_COR: case AJ_LEG2_FUNDO: case AJ_LEG2_BORDA:
@@ -5558,6 +5584,10 @@ static int definirValorDireto(int op, int novo) {
   if (novo == antes) return 1;
   valor[op] = novo;
   if (!gravar()) { valor[op] = antes; return 0; }
+  if (op == AJ_LEG_SYNC_AUDIO) {
+    audmodel_enable(novo == 0, novo == 0);
+    legsync_audio_habilitar(novo == 0);
+  }
   if (op == AJ_FIL_LIMITE) {
     fil_ajustar_limite(novo);
     valor[op] = fil_limite_gravado();
@@ -5690,6 +5720,11 @@ static void eventoTela(const SDL_Event *e) {
     if (focoOp == AJ_NOVIDADES20) { pediuNovidades20 = 1; return; }
     if (focoOp == AJ_ADDONS) { pediuAddons = 1; return; }
     if (focoOp == AJ_PLUGINS) { pediuPlugins = 1; return; }
+    if (focoOp == AJ_AUDMODEL_RETRY) { audmodel_retry(); return; }
+    if (focoOp == AJ_AUDMODEL_REMOVE) {
+      if (definirValorDireto(AJ_LEG_SYNC_AUDIO, 1)) audmodel_remove();
+      return;
+    }
     if (focoOp == AJ_DIAGNOSTICO) { pediuDiagnostico = 1; return; }
     if (focoOp == AJ_HERO_CATALOGOS) { if (!inativa(focoOp)) heroFonteCiclar(+1); return; }
     if (focoOp == AJ_VELOCIDADE) { pediuVelocidade = 1; return; }
@@ -5978,6 +6013,21 @@ static int nValores(int op) {
 static const char *textoValor(int op) {
   static char buf[48];
   const Opcao *o = &OPCOES[op];
+  if (op == AJ_LEG_SYNC_AUDIO) {
+    AudModelStatus status = audmodel_status();
+    if (!audmodel_supported()) return "Indisponível nesta versão";
+    if (!ajustes_legenda_sync_audio()) return "Desligado";
+    if (status.state == AUDMODEL_DOWNLOADING) {
+      snprintf(buf, sizeof buf, i18n("Baixando… %d%%"), status.progress); return buf;
+    }
+    if (status.state == AUDMODEL_VERIFYING) return "Verificando…";
+    if (status.state == AUDMODEL_FAILED) return "Falhou · tentar novamente";
+    if (status.state == AUDMODEL_READY) return "Pronto";
+  }
+  if (op == AJ_AUDMODEL_REMOVE) {
+    AudModelStatus status = audmodel_status();
+    if (status.freed) { snprintf(buf, sizeof buf, i18n("%llu bytes liberados"), (unsigned long long)status.freed); return buf; }
+  }
   if (o->tipo == OP_LEITURA || o->tipo == OP_ACAO) return textoLeitura(op);
   if (op == AJ_HERO_TRAILER_ESPERA) {
     // Decimos de segundo: 22 le "2,2 s".

@@ -35,9 +35,10 @@ void audsync_backend(void (*ligar)(int on));
 void audsync_formato(int fmt);
 // Returns 1 if the chunk was queued (tap armed and room in the ring).
 int  audsync_pcm(const int16_t *mono16k, int n, int64_t ptsUs);
+int audsync_pcm_pedido(uint64_t pedido,const int16_t *mono16k,int n,int64_t ptsUs);
 
 typedef enum {
-  AUDSYNC_CAP_PLATAFORMA = 0, AUDSYNC_CAP_SEM_AUDIO, AUDSYNC_CAP_PASSTHROUGH, AUDSYNC_CAP_OK
+  AUDSYNC_CAP_PLATAFORMA = 0, AUDSYNC_CAP_SEM_AUDIO, AUDSYNC_CAP_PASSTHROUGH, AUDSYNC_CAP_OK, AUDSYNC_CAP_MODEL, AUDSYNC_CAP_RUNTIME
 } AudSyncCap;
 AudSyncCap audsync_capacidade(void);
 
@@ -48,7 +49,8 @@ typedef enum {
 typedef enum {
   AUDSYNC_M_OK = 0, AUDSYNC_M_PLATAFORMA, AUDSYNC_M_PASSTHROUGH, AUDSYNC_M_SEM_FALA,
   AUDSYNC_M_CONTINUA, AUDSYNC_M_SEM_LEGENDA, AUDSYNC_M_CONFIANCA, AUDSYNC_M_JANELA,
-  AUDSYNC_M_MEMORIA
+  AUDSYNC_M_MEMORIA, AUDSYNC_M_MODEL, AUDSYNC_M_RUNTIME, AUDSYNC_M_SOURCE,
+  AUDSYNC_M_TRACK, AUDSYNC_M_BUDGET, AUDSYNC_M_DECODER
 } AudSyncMotivo;
 const char *audsync_motivo(AudSyncMotivo m);   // stable English reason for logs
 
@@ -79,6 +81,9 @@ int  audsync_tomar(uint64_t pedido, LegendaDocumento **ref, LegendaDocumento **r
 void audsync_destruir(void);              // join; app teardown
 
 // Tests: free space in the ring (samples) and its fixed capacity.
+int audsync_livre(void);
+void audsync_backend_falhar(AudSyncMotivo motivo);
+void audsync_backend_falhar_pedido(uint64_t pedido, AudSyncMotivo motivo);
 int audsync_teste_livre(void);
 void audsync_teste_travar(int travado);
 #define AUDSYNC_RING (AUDVAD_HZ * 4)

@@ -1,5 +1,9 @@
 // Ver audsync.h. Nucleo sem SDL/GL; a ponte Android fica em video_android.c.
 #include "audsync.h"
+#ifndef AUDSYNC_LEGACY_DSP
+#include "audmodel.h"
+#include "audsilero.h"
+#endif
 #include <ctype.h>
 #include <math.h>
 #include <pthread.h>
@@ -40,6 +44,9 @@ static struct {
   int tapAplicado;
   // worker only
   AudVad vad;
+#ifndef AUDSYNC_LEGACY_DSP
+  AudSilero *silero;
+#endif
   int64_t spanIni, esperado;
   int temSpan;
   int16_t local[4096];
@@ -48,7 +55,8 @@ static struct {
 const char *audsync_motivo(AudSyncMotivo m) {
   static const char *const n[] = { "ok", "platform", "passthrough", "no_speech", "continuous_audio",
                                    "no_subtitle_activity", "low_confidence", "short_window",
-                                   "out_of_memory" };
+                                   "out_of_memory", "model_not_ready", "runtime_unavailable", "unsupported_source",
+                                   "ambiguous_track", "resource_budget", "decoder_failure" };
   return m >= 0 && m < (int)(sizeof n / sizeof *n) ? n[m] : "invalid";
 }
 
@@ -57,6 +65,10 @@ void audsync_backend(void (*ligar)(int)) {
 }
 
 AudSyncCap audsync_capacidade(void) {
+#ifndef AUDSYNC_LEGACY_DSP
+  if (!audmodel_supported()) return AUDSYNC_CAP_RUNTIME;
+  if (!audmodel_ready()) return AUDSYNC_CAP_MODEL;
+#endif
   void (*b)(int);
   int f = atomic_load(&formato);
   pthread_mutex_lock(&M); b = backendLigar; pthread_mutex_unlock(&M);
@@ -85,11 +97,11 @@ void audsync_formato(int f) {
   pthread_mutex_unlock(&M);
 }
 
-int audsync_pcm(const int16_t *a, int n, int64_t pts) {
+int audsync_pcm_pedido(uint64_t pedido, const int16_t *a, int n, int64_t pts) {
   uint32_t fimW, primeiro;
   if (!a || n <= 0) return 0;
   pthread_mutex_lock(&M);
-  if (!S.armado || S.pausado) { pthread_mutex_unlock(&M); return 0; }
+  if ((pedido && pedido != S.pedido) || !S.armado || S.pausado) { pthread_mutex_unlock(&M); return 0; }
   if ((uint32_t)n > AUDSYNC_RING - S.wUsado || S.dN >= DESC_N || n > (int)(sizeof S.local / sizeof *S.local)) {
     // Worker behind: drop and break the timeline; never wait here.
     S.st.descartados++; S.quebraPendente = 1;
@@ -109,14 +121,53 @@ int audsync_pcm(const int16_t *a, int n, int64_t pts) {
   return 1;
 }
 
+int audsync_pcm(const int16_t *a,int n,int64_t pts) { return audsync_pcm_pedido(0,a,n,pts); }
+
 void audsync_teste_travar(int t) {
   pthread_mutex_lock(&M); travadoTeste = t; pthread_cond_broadcast(&C); pthread_mutex_unlock(&M);
 }
 
-int audsync_teste_livre(void) {
+int audsync_livre(void) {
   int l;
   pthread_mutex_lock(&M); l = (int)(AUDSYNC_RING - S.wUsado); pthread_mutex_unlock(&M);
   return l;
+}
+
+int audsync_teste_livre(void) { return audsync_livre(); }
+void audsync_backend_falhar_pedido(uint64_t pedido, AudSyncMotivo motivo) {
+  pthread_mutex_lock(&M);
+  if ((!pedido || pedido == S.pedido) && S.st.fase == AUDSYNC_OUVINDO) { S.geracao++; falhar(motivo); limparRing(); }
+  pthread_cond_signal(&C);
+  pthread_mutex_unlock(&M);
+}
+void audsync_backend_falhar(AudSyncMotivo motivo) { audsync_backend_falhar_pedido(0,motivo); }
+static void detector_reset(void) {
+#ifdef AUDSYNC_LEGACY_DSP
+  audvad_iniciar(&S.vad);
+#else
+  if (S.silero) audsilero_reset(S.silero);
+#endif
+}
+static int detector_feed(const int16_t *pcm, int n, int64_t pts) {
+#ifdef AUDSYNC_LEGACY_DSP
+  audvad_pcm(&S.vad,pcm,n,pts); return 0;
+#else
+  return S.silero ? audsilero_feed(S.silero,pcm,n,pts) : -1;
+#endif
+}
+static int detector_flush(void) {
+#ifdef AUDSYNC_LEGACY_DSP
+  audvad_fechar(&S.vad); return S.vad.transbordou ? -1 : 0;
+#else
+  return S.silero ? audsilero_flush(S.silero) : -1;
+#endif
+}
+static const AudSeg *detector_segments(int *n) {
+#ifdef AUDSYNC_LEGACY_DSP
+  *n=S.vad.nseg; return S.vad.seg;
+#else
+  return audsilero_segments(S.silero,n);
+#endif
 }
 
 // --- documents ------------------------------------------------------------------------
@@ -169,7 +220,8 @@ static AudSyncMotivo montar(LegendaDocumento *prim, uint64_t pedido, double ini,
   int n = 0, i, nc = 0, nf = 0, nr = 0, nd = 0;
   const LegendaCue *v = legenda_documento_dados(prim, &n);
   const LegendaDocumentoInfo *pi = legenda_documento_info(prim);
-  AudSeg *cues = NULL, *fala = S.vad.seg;
+  AudSeg *cues = NULL;
+  const AudSeg *fala = detector_segments(&nf);
   LegendaCue *rv = NULL, *dv = NULL;
   LegendaDocumentoInfo info;
   double w0, w1, off;
@@ -185,7 +237,7 @@ static AudSyncMotivo montar(LegendaDocumento *prim, uint64_t pedido, double ini,
       if (v[i].fim > cues[nc - 1].fim) cues[nc - 1].fim = v[i].fim;
     } else { cues[nc].inicio = v[i].inicio; cues[nc].fim = v[i].fim; nc++; }
   }
-  nf = S.vad.nseg;
+
   *al = audalign_estimar(fala, nf, cues, nc, ini, fim, raio);
   if (al->motivo != AUDALIGN_OK) { m = deAlign(al->motivo); goto fim; }
   off = al->offsetMs / 1000.0;
@@ -232,11 +284,18 @@ static void *trabalhar(void *u) {
   (void)u;
   pthread_mutex_lock(&M);
   for (;;) {
-    while (!S.parar && (travadoTeste || (!S.alinhar && !(S.st.fase == AUDSYNC_OUVINDO && (S.dN > 0 || S.resetar)))))
-      pthread_cond_wait(&C, &M);
+#ifndef AUDSYNC_LEGACY_DSP
+    if (S.st.fase != AUDSYNC_OUVINDO && !S.alinhar && S.silero) {
+      AudSilero *old=S.silero; S.silero=NULL;
+      pthread_mutex_unlock(&M); audsilero_destroy(old); audmodel_release(); pthread_mutex_lock(&M);
+    }
+#endif
+    if (!S.parar && (travadoTeste || (!S.alinhar && !(S.st.fase == AUDSYNC_OUVINDO && (S.dN > 0 || S.resetar))))) {
+      pthread_cond_wait(&C, &M); continue;
+    }
     if (S.parar) break;
     if (S.resetar) {
-      S.resetar = 0; S.temSpan = 0; audvad_iniciar(&S.vad); S.st.progresso = 0;
+      S.resetar = 0; S.temSpan = 0; detector_reset(); S.st.progresso = 0;
       continue;
     }
     if (S.alinhar) {
@@ -244,15 +303,15 @@ static void *trabalhar(void *u) {
       LegendaDocumento *prim = legenda_documento_reter(S.prim), *ref = NULL, *rec = NULL;
       double ini = S.spanIni / 1e6, fim = S.esperado / 1e6;
       int raio = S.raioMs;
-      AudAlign al;
+      AudAlign al = {0};
       AudSyncMotivo m;
       S.alinhar = 0;
       pthread_mutex_unlock(&M);
-      audvad_fechar(&S.vad);
-      m = montar(prim, pedido, ini, fim, raio, &ref, &rec, &al);
+      int flush_error = detector_flush();
+      m = flush_error ? AUDSYNC_M_MODEL : montar(prim, pedido, ini, fim, raio, &ref, &rec, &al);
       legenda_documento_liberar(prim);
       fprintf(stderr, "[audsync] audio_sync window reason=%s offset_ms=%d score=%.3f alt=%.3f speech=%.2f segments=%d\n",
-              audsync_motivo(m), al.offsetMs, al.score, al.alternativo, al.falaFracao, S.vad.nseg);
+              audsync_motivo(m), al.offsetMs, al.score, al.alternativo, al.falaFracao, 0);
       pthread_mutex_lock(&M);
       if (ger == S.geracao && S.st.fase == AUDSYNC_ALINHANDO) {
         S.st.estimativaMs = al.offsetMs; S.st.confianca = al.score;
@@ -276,24 +335,37 @@ static void *trabalhar(void *u) {
       S.wIni = (S.wIni + d.n) % AUDSYNC_RING; S.wUsado -= d.n;
       if (!S.temSpan || d.quebra || llabs(d.pts - S.esperado) > SALTO_US) {
         if (S.temSpan) S.st.reinicios++;
-        audvad_iniciar(&S.vad); S.temSpan = 1; S.spanIni = d.pts;
+        detector_reset(); S.temSpan = 1; S.spanIni = d.pts;
       }
       S.esperado = d.pts + (int64_t)d.n * 1000000 / AUDVAD_HZ;
       pthread_mutex_unlock(&M);
-      audvad_pcm(&S.vad, S.local, (int)d.n, d.pts);
+#ifndef AUDSYNC_LEGACY_DSP
+      if (!S.silero) {
+        char path[1024],error[192];
+        if (audmodel_acquire(path,sizeof path)) {
+          S.silero=audsilero_create(path,error,sizeof error);
+          if (!S.silero) audmodel_release();
+        }
+      }
+#endif
+      int detector_error = detector_feed(S.local, (int)d.n, d.pts);
       pthread_mutex_lock(&M);
       if (ger != S.geracao || S.st.fase != AUDSYNC_OUVINDO) continue;
+      if (detector_error) { falhar(AUDSYNC_M_MODEL); continue; }
       {
         int64_t cob = S.esperado - S.spanIni;
         S.st.progresso = (int)(cob / 10000 / (S.alvoMs > 0 ? S.alvoMs / 1000 : 1));
         if (S.st.progresso > 100) S.st.progresso = 100;
-        if (cob >= (int64_t)S.alvoMs * 1000) {
+        if (cob + 1000000 / AUDVAD_HZ >= (int64_t)S.alvoMs * 1000) {
           S.armado = 0; S.st.fase = AUDSYNC_ALINHANDO; S.alinhar = 1; limparRing();
         }
       }
     }
   }
   pthread_mutex_unlock(&M);
+#ifndef AUDSYNC_LEGACY_DSP
+  if (S.silero) { audsilero_destroy(S.silero); audmodel_release(); S.silero=NULL; }
+#endif
   return NULL;
 }
 
@@ -321,6 +393,7 @@ uint64_t audsync_pedir(uint64_t sessao, LegendaDocumento *prim, int alvoSeg, int
   limparRing();
   if (!S.fio) { S.st.fase = AUDSYNC_FALHOU; S.st.motivo = AUDSYNC_M_MEMORIA; }
   else if (!prim) { S.st.fase = AUDSYNC_FALHOU; S.st.motivo = AUDSYNC_M_SEM_LEGENDA; }
+  else if (cap == AUDSYNC_CAP_MODEL || cap == AUDSYNC_CAP_RUNTIME) { S.st.fase = AUDSYNC_FALHOU; S.st.motivo = cap == AUDSYNC_CAP_MODEL ? AUDSYNC_M_MODEL : AUDSYNC_M_RUNTIME; }
   else if (cap == AUDSYNC_CAP_PLATAFORMA) { S.st.fase = AUDSYNC_FALHOU; S.st.motivo = AUDSYNC_M_PLATAFORMA; }
   else if (cap == AUDSYNC_CAP_PASSTHROUGH) { S.st.fase = AUDSYNC_FALHOU; S.st.motivo = AUDSYNC_M_PASSTHROUGH; }
   else {
@@ -342,6 +415,7 @@ void audsync_cancelar(void) {
   S.geracao++; S.armado = 0; S.alinhar = 0; S.pausado = 0;
   if (S.st.fase != AUDSYNC_PARADO) S.st.fase = AUDSYNC_PARADO;
   limparRing();
+  pthread_cond_signal(&C);
   pthread_mutex_unlock(&M);
   legenda_documento_liberar(a); legenda_documento_liberar(b); legenda_documento_liberar(c);
   audsync_passo();
@@ -355,13 +429,14 @@ void audsync_pausar(int sensivel) {
   } else S.pausado = 0;
   S.st.pausado = S.pausado;
   pthread_mutex_unlock(&M);
+  audsync_passo();
 }
 
 void audsync_passo(void) {
   void (*b)(int) = NULL;
   int quer;
   pthread_mutex_lock(&M);
-  quer = S.armado;
+  quer = S.armado && !S.pausado;
   if (backendLigar && quer != S.tapAplicado) { b = backendLigar; S.tapAplicado = quer; }
   pthread_mutex_unlock(&M);
   if (b) b(quer);   // posts to the platform's own thread; never blocks on playback

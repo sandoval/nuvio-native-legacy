@@ -1,5 +1,5 @@
 #!/bin/sh
-# Minimal static LGPL FFmpeg: DTS decode and stereo AAC encode only. No FFmpeg
+# Minimal static LGPL FFmpeg: shared DTS playback and auxiliary audio analysis. No FFmpeg
 # network/TLS protocols or software video decoders enter the TV executable.
 set -eu
 VERSION=7.1.5
@@ -25,8 +25,8 @@ fi
   --disable-programs --disable-doc --disable-debug --disable-network \
   --disable-avdevice --disable-avfilter --disable-swscale --disable-postproc \
   --enable-avcodec --enable-avformat --enable-avutil --enable-swresample \
-  --enable-decoder=dca,dvdsub,pgssub,ass,ssa,subrip,movtext,webvtt --enable-encoder=aac \
-  --enable-demuxer=matroska,mov --enable-parser=dca,h264,hevc,aac \
+  --enable-decoder=aac,ac3,eac3,pcm_s16le,pcm_s16be,pcm_s24le,pcm_s24be,pcm_s32le,pcm_s32be,pcm_f32le,pcm_f64le,opus,dca,dvdsub,pgssub,ass,ssa,subrip,movtext,webvtt --enable-encoder=aac \
+  --enable-demuxer=matroska,mov --enable-parser=dca,h264,hevc,aac,ac3,opus \
   --enable-bsf=h264_mp4toannexb,hevc_mp4toannexb,dca_core \
   --extra-cflags="${CFLAGS:--O2}"
 make -j"${NUVIO_DTS_JOBS:-2}"

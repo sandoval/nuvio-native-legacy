@@ -89,7 +89,8 @@ int main(void) {
   snprintf(dirAjustes, sizeof dirAjustes, "%s", tmp);
   for (i = 0; i < AJ_N; ++i) OPCOES[i].tipo = OP_ACAO;
   OPCOES[AJ_HERO].tipo = OP_ESCOLHA;
-  assert(AJ_RELOGIO_12H + 1 == AJ_N);
+  assert(AJ_RELOGIO_12H + 1 == AJ_AUDMODEL_RETRY);
+  assert(AJ_AUDMODEL_RETRY + 1 == AJ_AUDMODEL_REMOVE && AJ_AUDMODEL_REMOVE + 1 == AJ_N);
   assert(dePerfil(AJ_HERO));
   assert(gravar());
   snprintf(path, sizeof path, "%s/ajustes.txt", tmp);

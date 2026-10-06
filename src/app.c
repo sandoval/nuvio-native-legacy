@@ -104,6 +104,7 @@
 #include "p2pmotor.h"
 #include "player.h"
 #include "legsync.h"
+#include "audsource.h"
 #include "streams.h"
 #include "streamfitdur.h"
 #include "streamfitpassiva.h"
@@ -4393,6 +4394,7 @@ void app_encerrar(void) {
   }
   aguardandoFonte = 0;
   player_encerrar();
+  audsource_destroy();
   legsync_destruir();   // F05: join dos fios do AutoSync, depois do player
   discord_encerrar();   // a atividade some na hora, sem esperar o Discord notar a queda
   video_encerrar();    // solta o nome LS2 antes do processo sumir (deploy mata sem aviso)

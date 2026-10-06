@@ -42,6 +42,15 @@ BUILD_PLATFORM="${NUVIO_BUILD_PLATFORM:-linux/arm64}"
 SDK_IMAGE="${NUVIO_SDK_IMAGE:-nuvio-webos-sdk}"
 DTS_ENABLED="${NUVIO_DTS_FFMPEG:-1}"
 case "$DTS_ENABLED" in 0|1) ;; *) echo 'NUVIO_DTS_FFMPEG deve ser 0 ou 1' >&2; exit 2;; esac
+SILERO_ENABLED="${NUVIO_SILERO_ORT:-0}"
+case "$SILERO_ENABLED" in 0|1) ;; *) echo 'NUVIO_SILERO_ORT must be 0 or 1' >&2; exit 2;; esac
+SILERO_VOL=()
+if [ "$SILERO_ENABLED" = 1 ]; then
+  [ "$DTS_ENABLED" = 1 ] || { echo 'Silero on webOS requires the shared FFmpeg analysis decoder' >&2; exit 2; }
+  : "${NUVIO_SILERO_ROOT:?external ARM runtime install prefix required}"
+  : "${NUVIO_AUTOSYNC_BASELINE_DIR:?matching DTS distributable required for the 5 MB audit}"
+  SILERO_VOL=(-v "$NUVIO_SILERO_ROOT:/silero:ro,z")
+fi
 
 # --high-cache pode vir antes ou depois de --build/--ipk. So muda uma -D e os
 # nomes; o codigo e o mesmo — e por isso a variante nao precisa de branch.
@@ -92,6 +101,7 @@ if [ -n "${NUVIO_DTS_ROOT:-}" ]; then DTS_ENV=(-e "NUVIO_DTS_ROOT=$NUVIO_DTS_ROO
   -e NUVIO_EXTRA_CFLAGS="${NUVIO_EXTRA_CFLAGS:-}" \
   -e NUVIO_ASS_LIBASS="${NUVIO_ASS_LIBASS:-1}" \
   -e NUVIO_DTS_FFMPEG="$DTS_ENABLED" \
+  -e NUVIO_SILERO_ORT="$SILERO_ENABLED" "${SILERO_VOL[@]}" \
   "${DTS_ENV[@]}" \
   -v "$PWD":/work:z "$SDK_IMAGE" sh -c '
   set -e
@@ -112,6 +122,16 @@ if [ -n "${NUVIO_DTS_ROOT:-}" ]; then DTS_ENV=(-e "NUVIO_DTS_ROOT=$NUVIO_DTS_ROO
     DTS_CFLAGS="-DNV_DTS_FFMPEG -I$DTS/include"
     DTS_LIBS="-L$DTS/lib -Wl,--start-group -lavformat -lavcodec -lswresample -lavutil -Wl,--end-group -lpthread -lm"
   fi
+  SILERO_CFLAGS=""
+  SILERO_LIBS=""
+  if [ "${NUVIO_SILERO_ORT:-0}" = 1 ]; then
+    [ -f /silero/include/onnxruntime_c_api.h ] && [ -f /silero/lib/libonnxruntime.so.1 ] || { echo "ARM Silero runtime install is incomplete" >&2; exit 2; }
+    SILERO_CFLAGS="-DNUVIO_SILERO_ORT -DNUVIO_SILERO_MINIMAL -I/silero/include"
+    SILERO_LIBS="-Wl,-rpath,\$ORIGIN/lib"
+    if [ -f /silero/include/audmodel-release.h ]; then
+      SILERO_CFLAGS="$SILERO_CFLAGS -include /silero/include/audmodel-release.h"
+    fi
+  fi
   # -DNV_WEBOS: a identidade do alvo tem que vir daqui, porque o compilador
   # webos define __linux__ igual a qualquer Linux e a toolchain nao tem macro
   # propria (src/ajustes.c separa o locale da TV por ela, como NV_TPK e
@@ -124,7 +144,7 @@ if [ -n "${NUVIO_DTS_ROOT:-}" ]; then DTS_ENV=(-e "NUVIO_DTS_ROOT=$NUVIO_DTS_ROO
     # versao (ou nenhuma), e libatomic.so.1 nao e garantida.
     P2P_LIBS="/p2p/build-arm/libnuvio_engine.a /p2p/build-arm/_deps/nuvio_libtorrent-build/libtorrent-rasterbar.a $SR/usr/lib/libssl.a $SR/usr/lib/libcrypto.a -static-libgcc -Wl,-Bstatic -lstdc++ -latomic -Wl,-Bdynamic -lrt -Wl,--gc-sections"
   fi
-  arm-webos-linux-gnueabi-gcc src/*.c src/dts/*.c -o nuvio-proto.arm -O2 -DNV_WEBOS $NUVIO_EXTRA_CFLAGS $ASS_CFLAGS $P2P_CFLAGS $DTS_CFLAGS \
+  arm-webos-linux-gnueabi-gcc src/*.c src/dts/*.c -o nuvio-proto.arm -O2 -DNV_WEBOS $NUVIO_EXTRA_CFLAGS $ASS_CFLAGS $P2P_CFLAGS $DTS_CFLAGS $SILERO_CFLAGS \
     -DNV_SUPABASE_URL="\"$NV_SUPABASE_URL\"" \
     -DNV_SUPABASE_ANON_KEY="\"$NV_SUPABASE_ANON_KEY\"" \
     -DNV_TV_LOGIN_BASE="\"$NV_TV_LOGIN_BASE\"" \
@@ -138,8 +158,15 @@ if [ -n "${NUVIO_DTS_ROOT:-}" ]; then DTS_ENV=(-e "NUVIO_DTS_ROOT=$NUVIO_DTS_ROO
     -DNV_DISCORD_CLIENT_ID="\"${NV_DISCORD_CLIENT_ID:-}\"" \
     -DNV_VERSAO="\"$NV_VERSAO\"" \
     -I$SR/usr/include -I$SR/usr/include/SDL2 \
-    -lSDL2 -lSDL2_image -lSDL2_ttf -lGLESv2 -lEGL $P2P_LIBS -ldl -lpthread -lz -lm $ASS_LIBS $DTS_LIBS
+    -lSDL2 -lSDL2_image -lSDL2_ttf -lGLESv2 -lEGL $P2P_LIBS -ldl -lpthread -lz -lm $ASS_LIBS $DTS_LIBS $SILERO_LIBS
   mkdir -p deploy/app/lib
+  rm -f deploy/app/lib/libonnxruntime.so.1
+  rm -rf deploy/app/licenses/silero
+  if [ "${NUVIO_SILERO_ORT:-0}" = 1 ]; then
+    cp -L /silero/lib/libonnxruntime.so.1 deploy/app/lib/libonnxruntime.so.1
+    mkdir -p deploy/app/licenses/silero
+    cp licenses/silero/*.txt deploy/app/licenses/silero/
+  fi
   find deploy/app/lib -maxdepth 1 -type f -name "dts-starfish-webos*.so" -delete
   if [ -d deploy/app/licenses/dts ]; then
     find deploy/app/licenses/dts -maxdepth 1 -type f \
@@ -175,6 +202,10 @@ while IFS='=' read -r NOME VALOR; do
 done < "$ENVF"
 
 cp nuvio-proto.arm deploy/app/nuvio-proto
+if [ -n "${NUVIO_AUTOSYNC_BASELINE_DIR:-}" ]; then
+  python3 tools/check-autosync-package.py --baseline-dir "$NUVIO_AUTOSYNC_BASELINE_DIR" \
+    --package-dir deploy/app --output "${NUVIO_AUTOSYNC_SIZE_REPORT:-/tmp/nuvio-autosync-size.json}"
+fi
 rm -f ./*.ipk
 
 # O .ipk so interessa para DISTRIBUIR (instalar em outra TV, publicar). O ciclo
@@ -294,6 +325,10 @@ if [ "$1" = "--ipk" ]; then
     exit 1
   fi
   VAZOU=""
+  if printf '%s\n' "$LISTA" | grep -qiE '\.(onnx|ort|pt|pth|safetensors|partial)(\.(gz|xz|zip))?$|(^|/)subtitle-autosync/'; then
+    echo '    ABORTED: actual IPK contains model weights or download artifacts' >&2
+    rm -f "$IPK"; exit 1
+  fi
   for f in $ARQ_DE_PESSOA $ACERVO_DE_PESSOA; do
     printf '%s\n' "$LISTA" | grep -q "art/$f$" && VAZOU="$VAZOU $f"
   done
@@ -371,8 +406,17 @@ SCP="sshpass -p $TV_PASS scp -o StrictHostKeyChecking=no -q ${NUVIO_SSH_OPTS:-}"
 $SSH "root@$TV_IP" "mkdir -p $APPDIR"
 
 DTS_PAYLOAD=()
+if [ "$SILERO_ENABLED" = 1 ]; then
+  DTS_PAYLOAD+=(lib/libonnxruntime.so.1 licenses/silero/ONNX-RUNTIME-LICENSE.txt
+                licenses/silero/ONNX-RUNTIME-THIRD-PARTY.txt licenses/silero/SILERO-LICENSE.txt)
+  $SSH "root@$TV_IP" "mkdir -p $APPDIR/lib $APPDIR/licenses/silero"
+  for arquivo in "${DTS_PAYLOAD[@]}"; do
+    $SCP "deploy/app/$arquivo" "root@$TV_IP:$APPDIR/$arquivo.novo"
+    $SSH "root@$TV_IP" "mv -f $APPDIR/$arquivo.novo $APPDIR/$arquivo && chmod 644 $APPDIR/$arquivo"
+  done
+fi
 if [ "$DTS_ENABLED" = 1 ]; then
-  DTS_PAYLOAD=(lib/dts-starfish-webos3.so lib/dts-starfish-webos4.so
+  DTS_PAYLOAD+=(lib/dts-starfish-webos3.so lib/dts-starfish-webos4.so
                licenses/dts/COPYING.LGPLv2.1 licenses/dts/SOURCE.txt)
   echo "==> enviando adaptadores DTS e avisos de licenca"
   $SSH "root@$TV_IP" "mkdir -p $APPDIR/lib $APPDIR/licenses/dts"

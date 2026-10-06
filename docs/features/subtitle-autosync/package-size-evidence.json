@@ -1,0 +1,114 @@
+{
+  "limit_bytes": 5000000,
+  "dts_baseline": {
+    "native_bytes": 44599884,
+    "files": {
+      "lib/dts-starfish-webos3.so": {
+        "bytes": 45776,
+        "machine": 40,
+        "class": 1
+      },
+      "lib/dts-starfish-webos4.so": {
+        "bytes": 45688,
+        "machine": 40,
+        "class": 1
+      },
+      "nuvio-proto": {
+        "bytes": 44508420,
+        "machine": 40,
+        "class": 1
+      }
+    },
+    "forbidden_artifacts": []
+  },
+  "package": {
+    "native_bytes": 46698880,
+    "files": {
+      "lib/dts-starfish-webos3.so": {
+        "bytes": 45776,
+        "machine": 40,
+        "class": 1
+      },
+      "lib/dts-starfish-webos4.so": {
+        "bytes": 45688,
+        "machine": 40,
+        "class": 1
+      },
+      "lib/libonnxruntime.so.1": {
+        "bytes": 1655560,
+        "machine": 40,
+        "class": 1
+      },
+      "nuvio-proto": {
+        "bytes": 44951856,
+        "machine": 40,
+        "class": 1
+      }
+    },
+    "forbidden_artifacts": []
+  },
+  "autosync_native_delta": 2098996,
+  "errors": [],
+  "upstream_master": {
+    "native_bytes": 42353748,
+    "files": {
+      "nuvio-proto": {
+        "bytes": 42353748,
+        "machine": 40,
+        "class": 1
+      }
+    },
+    "forbidden_artifacts": []
+  },
+  "total_native_delta_from_master": 4345132,
+  "baseline_ipk": {
+    "native_bytes": 44599884,
+    "files": {
+      "usr/palm/applications/space.nuvio.native.legacy/lib/dts-starfish-webos3.so": {
+        "bytes": 45776,
+        "machine": 40,
+        "class": 1
+      },
+      "usr/palm/applications/space.nuvio.native.legacy/lib/dts-starfish-webos4.so": {
+        "bytes": 45688,
+        "machine": 40,
+        "class": 1
+      },
+      "usr/palm/applications/space.nuvio.native.legacy/nuvio-proto": {
+        "bytes": 44508420,
+        "machine": 40,
+        "class": 1
+      }
+    },
+    "forbidden_artifacts": [],
+    "package_bytes": 57576918
+  },
+  "package_ipk": {
+    "native_bytes": 46698880,
+    "files": {
+      "usr/palm/applications/space.nuvio.native.legacy/lib/dts-starfish-webos3.so": {
+        "bytes": 45776,
+        "machine": 40,
+        "class": 1
+      },
+      "usr/palm/applications/space.nuvio.native.legacy/lib/dts-starfish-webos4.so": {
+        "bytes": 45688,
+        "machine": 40,
+        "class": 1
+      },
+      "usr/palm/applications/space.nuvio.native.legacy/lib/libonnxruntime.so.1": {
+        "bytes": 1655560,
+        "machine": 40,
+        "class": 1
+      },
+      "usr/palm/applications/space.nuvio.native.legacy/nuvio-proto": {
+        "bytes": 44951856,
+        "machine": 40,
+        "class": 1
+      }
+    },
+    "forbidden_artifacts": [],
+    "package_bytes": 58630390
+  },
+  "compressed_package_delta": 1053472
+}
