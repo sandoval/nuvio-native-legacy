@@ -16,6 +16,7 @@
 #include "ajustes.h"
 #include "dts/dts_overlay.h"
 #include "legenda.h"
+#include "audsource.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -1885,6 +1886,15 @@ void video_bombear(void) {
     if (audioNaoSup && (!a || !a->codec[0] || knownDts))
       iniciarDts(-1);
   }
+  {
+    const VideoFaixa *track = video_audio(audioAtual);
+    /* Native uMS ordinals are not FFmpeg indexes. -1 asks the analysis
+     * decoder to prove there is exactly one audio track; ambiguous sources
+     * are refused. DTS metadata provides an actual source demux index. */
+    int stream = track ? track->stream_index : -1;
+    audsource_update(urlAtual, cabsHttp, stream, audioAtual, posSeg,
+                     pronto && track && !modoLoad && !falhou && !terminou);
+  }
   // O ACB demora cerca de 1,5 s para ligar uma sessao. Se o usuario sair e
   // reabrir nesse intervalo, o loadCompleted novo encontra bindVivo=1. Antes
   // ele simplesmente desistia para sempre; agora o pedido fica pendente.
@@ -2250,6 +2260,7 @@ void video_parar(void) {
 
 static void pararSessao(void) {
   char b[128];
+  audsource_stop();
   int tinhaDts = dtsSessao != NULL;
   DtsPlayback *antigoDts = dtsSessao;
   dtsSessao = NULL;
@@ -2960,6 +2971,7 @@ void video_legenda_externa(const char *url) {
 }
 
 void video_encerrar(void) {
+  audsource_destroy();
   if (!ligado) return;
   video_parar();
   if (bindJoinable) { pthread_join(fioBind, NULL); bindJoinable = 0; }

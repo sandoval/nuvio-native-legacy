@@ -33,6 +33,7 @@ const char *dts_engine_error(DtsEngine *e) { (void)e; return "DTS conversion not
 #include <libavutil/opt.h>
 #include <libavutil/dovi_meta.h>
 #include <libswresample/swresample.h>
+#include "../mediaio_ffmpeg.h"
 #define RANGE_BYTES (1024 * 1024)
 #ifndef RANGE_WORKERS
 #define RANGE_WORKERS 4
@@ -241,9 +242,10 @@ static int64_t seek_range(void *opaque,int64_t offset,int whence) {
   if (cancelled(e)) return AVERROR_EXIT;
   if (whence==AVSEEK_SIZE) return e->total>=0?e->total:AVERROR(ENOSYS);
   whence &= ~AVSEEK_FORCE;
-  int64_t base=whence==SEEK_SET?0:whence==SEEK_CUR?e->pos:whence==SEEK_END?e->total:-1;
-  if (base<0 || (offset>0 && base>INT64_MAX-offset) || (offset<0 && offset<-base)) return AVERROR(EINVAL);
-  e->pos=base+offset;
+  int64_t next;
+  int result=mediaio_position(e->pos,e->total,offset,whence,&next);
+  if(result<0) return result;
+  e->pos=next;
   if(!e->cache || e->pos<e->cache_start || e->pos-e->cache_start>=e->cache_size)
     clear_ranges(e);
   return e->pos;
@@ -333,21 +335,10 @@ int dts_engine_open(DtsEngine *e,const char *url,const char *headers,int audio,i
   if (audio < -1 || !isfinite(start) || start<0 || start>INT64_MAX/1000000000.0)
     return fail(e,"Invalid DTS conversion options",0);
   e->url=strdup(url); e->headers=strdup(headers?headers:"");
-  e->fmt=avformat_alloc_context();
-  unsigned char *buffer=av_malloc(32768);
-  if (!e->url || !e->headers || !e->fmt || !buffer) { av_free(buffer); return fail(e,"Demux allocation",0); }
-  e->io=avio_alloc_context(buffer,32768,0,e,read_range,NULL,seek_range);
-  if (!e->io) { av_free(buffer); return fail(e,"IO allocation",0); }
-  e->fmt->pb=e->io; e->fmt->flags|=AVFMT_FLAG_CUSTOM_IO;
-  e->fmt->interrupt_callback=(AVIOInterruptCB){cancelled,e};
+  if (!e->url || !e->headers) return fail(e,"Demux allocation",0);
   /* Never give libavformat the signed URL; custom AVIO is its sole transport.
    * No decoder logs are enabled, including malformed metadata containing URLs. */
-  av_log_set_level(AV_LOG_QUIET);
-  AVDictionary *opts=NULL;
-  av_dict_set(&opts,"format_whitelist","matroska,webm,mov",0);
-  av_dict_set(&opts,"probesize","4194304",0);
-  av_dict_set(&opts,"analyzeduration","5000000",0);
-  int r=avformat_open_input(&e->fmt,NULL,NULL,&opts); av_dict_free(&opts);
+  int r=mediaio_open(&e->fmt,&e->io,e,read_range,seek_range,cancelled,4194304,5000000);
   if(r<0) return fail(e,"Container open",r);
   r=avformat_find_stream_info(e->fmt,NULL);
   if(r<0) return fail(e,"Container metadata",r);

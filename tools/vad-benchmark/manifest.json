@@ -1,0 +1,674 @@
+{
+  "schema": 1,
+  "sources": {
+    "ten-testset": {
+      "url": "https://github.com/TEN-framework/ten-vad/tree/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset",
+      "commit": "22a3bcd4509d0faaa8eef4881e8af5f39c178950",
+      "note": "Publisher says clips originate from LibriSpeech, GigaSpeech and DNS Challenge; no per-clip condition metadata. Repository license has additional conditions; source materials may have separate terms."
+    },
+    "pyannote-sample": {
+      "url": "https://github.com/pyannote/pyannote-audio/tree/b749285c5cdd4636b2edc7f766f1352c8dde9369/tutorials/assets",
+      "commit": "b749285c5cdd4636b2edc7f766f1352c8dde9369",
+      "note": "Meeting excerpt with RTTM speaker turns; union of speakers treated as speech, remainder as non-speech. Speaker-turn boundaries are not precise phonetic speech boundaries."
+    }
+  },
+  "dependencies": {
+    "libfvad_commit": "532ab666c20d3cfda38bca63abbb0f152706c369",
+    "silero_commit": "1e261b036686cd0017d500ee96acd1c4ba572a9d",
+    "numpy": "2.5.3",
+    "onnxruntime": "1.30.0"
+  },
+  "files": [
+    {
+      "id": "testset-audio-01.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-01.wav",
+      "sha256": "27cfaad6f5eb8c501171ed9c787dc0f26070d5c0d18717b918cccf15428487f5",
+      "bytes": 368718
+    },
+    {
+      "id": "testset-audio-01.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-01.scv",
+      "sha256": "9b15392f91383cfe05e16505bca7b6ab45c42d5a897dcdf56abc3840a66dcaf8",
+      "bytes": 186
+    },
+    {
+      "id": "testset-audio-02.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-02.wav",
+      "sha256": "c65e4f2093ae81e9e7f5290808ca13e18fce0bedf9b3515bdf149a85c7f45a6f",
+      "bytes": 129518
+    },
+    {
+      "id": "testset-audio-02.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-02.scv",
+      "sha256": "8a3f039273e18da5da3d76c33c1880bd06454a9c32499c9959736c5dea7abca2",
+      "bytes": 143
+    },
+    {
+      "id": "testset-audio-03.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-03.wav",
+      "sha256": "00d4f33e6f499f67df4787b389b10f0f3608dad906c89e68ff58a9e9555ea3a1",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-03.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-03.scv",
+      "sha256": "f5bcc35772834eac92d6910154b10d0c0d1e3277a8b2c49d28b6a877f40535f1",
+      "bytes": 130
+    },
+    {
+      "id": "testset-audio-04.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-04.wav",
+      "sha256": "8556acc7ec9b4b462c28b8989e43f226713416b4748f635c0d8eeaf0664ce736",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-04.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-04.scv",
+      "sha256": "ed07131c3a2d2c343aec1160367273b43aa0db52e9f21f99a25dcbb3983827fb",
+      "bytes": 102
+    },
+    {
+      "id": "testset-audio-05.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-05.wav",
+      "sha256": "85c138fc926740369cc3fe41b5e55f4780992da1c1da53619dfbd4c56e574275",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-05.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-05.scv",
+      "sha256": "ea96cffe38d0b603abd5575aeb78edaf41680900b430c86324a102cdd5c48815",
+      "bytes": 130
+    },
+    {
+      "id": "testset-audio-06.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-06.wav",
+      "sha256": "d5da0b54a745b8387cd5c89ad8a6a9934b2ecc2da1b1a1bd623fc63951830542",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-06.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-06.scv",
+      "sha256": "d757906e8f642208aa946e55a2701478ae51b335b4f33974fccbdc64bfea8d02",
+      "bytes": 130
+    },
+    {
+      "id": "testset-audio-07.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-07.wav",
+      "sha256": "24e2929e1266e2e67526096b59d27edc550c6b97ca96816c8976193b18c3e884",
+      "bytes": 270158
+    },
+    {
+      "id": "testset-audio-07.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-07.scv",
+      "sha256": "6d417f583653c95f49a179de39959bf49f19deb42b3d30c186437907e3b79017",
+      "bytes": 171
+    },
+    {
+      "id": "testset-audio-08.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-08.wav",
+      "sha256": "d25165c8e1dd540d93beb2b9467d4064516569afbfb84020ae237af919cd3f5d",
+      "bytes": 307278
+    },
+    {
+      "id": "testset-audio-08.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-08.scv",
+      "sha256": "4771e16100a78fc75b92467d7ab74eb3e9955f71e6c8b985dd62befb61e6ea95",
+      "bytes": 143
+    },
+    {
+      "id": "testset-audio-09.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-09.wav",
+      "sha256": "ba0098673ba665d7f56237508dc510691a6e7c8ad87a322f33fc33fa7cb3aacb",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-09.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-09.scv",
+      "sha256": "4e05c0d7a0216b55d1d0b0826aeab04d41fcdf35243251ebb2c24b4f055ddf46",
+      "bytes": 144
+    },
+    {
+      "id": "testset-audio-10.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-10.wav",
+      "sha256": "56d6c5bf36308086de176b51341482605f8658e02a02c963bb5e6a773c7d0868",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-10.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-10.scv",
+      "sha256": "71a4a70ad3c21c31a896121f1b3a4b9be0a21a26147c55711d7d7acdfb5a21ec",
+      "bytes": 298
+    },
+    {
+      "id": "testset-audio-11.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-11.wav",
+      "sha256": "eeccaff1c16e4167a896a07cd0cce15ffa53251f2ba081f3402cc69802538b01",
+      "bytes": 282702
+    },
+    {
+      "id": "testset-audio-11.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-11.scv",
+      "sha256": "40b8b0a2220d81e0592411f6b53e8fff7d1ffc0142ce9e0758eddfead515d9ca",
+      "bytes": 129
+    },
+    {
+      "id": "testset-audio-12.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-12.wav",
+      "sha256": "a1131821079f313e7a5719e9d90e437b0a28ba76ed33877bae5c0140ce14d867",
+      "bytes": 153358
+    },
+    {
+      "id": "testset-audio-12.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-12.scv",
+      "sha256": "371d8d55d4159f3e140afcef5b308ab3e47bb8ac5a1ff38f47a1cdc768a00e5e",
+      "bytes": 115
+    },
+    {
+      "id": "testset-audio-13.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-13.wav",
+      "sha256": "27ff840a38d3052e0e01a96dbe20e33f6e0c2916a8bd85f4a9e5d0841083a7d9",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-13.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-13.scv",
+      "sha256": "b81854f554f5aced7248a8dbe95940b7cb4b3009d98dae02629786ebab4c4ffc",
+      "bytes": 132
+    },
+    {
+      "id": "testset-audio-14.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-14.wav",
+      "sha256": "76cfbe88a9b670e6bec76d083a25a16c262728768e21a36ca088ea56b94b38de",
+      "bytes": 217838
+    },
+    {
+      "id": "testset-audio-14.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-14.scv",
+      "sha256": "0822491a9938d4c771d6feff77b4201f001d4b2f66008db03cbe9a817c246ebb",
+      "bytes": 115
+    },
+    {
+      "id": "testset-audio-15.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-15.wav",
+      "sha256": "64c4e91704f7ca9d745b17412b82b16d725a39a4d41b7e415be70c81dc05d85f",
+      "bytes": 151630
+    },
+    {
+      "id": "testset-audio-15.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-15.scv",
+      "sha256": "bbdb193263f6529b58773c40c1912cccdd363eab9dd128540048ed8fc3f0295d",
+      "bytes": 115
+    },
+    {
+      "id": "testset-audio-16.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-16.wav",
+      "sha256": "a6e0818381e0d6e8f8c70f346cb04e486d83ce677618152e592a9301280ce086",
+      "bytes": 327758
+    },
+    {
+      "id": "testset-audio-16.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-16.scv",
+      "sha256": "97bc64653f0d3aa015b3a13bdb02109b523feab12f2a1033e8c8ac17703548e4",
+      "bytes": 118
+    },
+    {
+      "id": "testset-audio-17.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-17.wav",
+      "sha256": "d0314570c0da423f19aebe29104e92f89a4f416e7477dcac007bd2aee090191c",
+      "bytes": 124238
+    },
+    {
+      "id": "testset-audio-17.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-17.scv",
+      "sha256": "ed4103b3b43c4660f9189a96a5e80b168bb10234683a185c6bff3e2f453b65f5",
+      "bytes": 87
+    },
+    {
+      "id": "testset-audio-18.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-18.wav",
+      "sha256": "2714334967a0f57fea475fc5f6f711c01e60a007c4d85c7f12faa6dff6251cee",
+      "bytes": 233550
+    },
+    {
+      "id": "testset-audio-18.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-18.scv",
+      "sha256": "90f7e1e6b5ffba221cc77685f0faf7f852410feef08d3f6d5d0a3e00f696b6a2",
+      "bytes": 157
+    },
+    {
+      "id": "testset-audio-19.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-19.wav",
+      "sha256": "162c1ff528781efa8dba6626ac20ba6861576df4c96bfb23723fada1c42b230c",
+      "bytes": 295758
+    },
+    {
+      "id": "testset-audio-19.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-19.scv",
+      "sha256": "c52b2c883c2ecc1546e57edafc712ef5c586faa7bbab597b6992946f9680c0ce",
+      "bytes": 115
+    },
+    {
+      "id": "testset-audio-20.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-20.wav",
+      "sha256": "2573850eb7dca230ab5ab15a2cee4a41b2071220d95488345172eeec7b0db9f9",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-20.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-20.scv",
+      "sha256": "5ed8c36f487498f4a1f1b5bc05b9ed1ecf8aaba432c4fc9feab527e4ea1720e8",
+      "bytes": 130
+    },
+    {
+      "id": "testset-audio-21.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-21.wav",
+      "sha256": "5108681447873375f1bd53d0924ba2e34447564d76f462227fb603f3d8f2469a",
+      "bytes": 109838
+    },
+    {
+      "id": "testset-audio-21.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-21.scv",
+      "sha256": "e228be68136805d67705360e2ee7af169dab4b4596f51bb6bef25448340f783e",
+      "bytes": 87
+    },
+    {
+      "id": "testset-audio-22.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-22.wav",
+      "sha256": "af365cbcadc2cd77e4b8ad0f4665af4dd732690740100c122a7ad045d005e4ce",
+      "bytes": 450638
+    },
+    {
+      "id": "testset-audio-22.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-22.scv",
+      "sha256": "81d5b805e11f2abd44afc72fd2abaca213d35dc8c279e7025af36a1ab7f50e90",
+      "bytes": 238
+    },
+    {
+      "id": "testset-audio-23.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-23.wav",
+      "sha256": "f607e5861f6340e97a549ceeeaa96a693954601b1cc5223dd158dae289585308",
+      "bytes": 159822
+    },
+    {
+      "id": "testset-audio-23.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-23.scv",
+      "sha256": "9f92a29976c926295797db7f101185e9cd02b7c990832ea34e24a777df077e9d",
+      "bytes": 87
+    },
+    {
+      "id": "testset-audio-24.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-24.wav",
+      "sha256": "d82369cbf34b377c4872ec4af062b226aa77c18a8e783b44fac086fb75f07dae",
+      "bytes": 206158
+    },
+    {
+      "id": "testset-audio-24.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-24.scv",
+      "sha256": "6df174f96f6186af4da09afe41d56973b3da7d3296cb315dde4f6db437520abc",
+      "bytes": 115
+    },
+    {
+      "id": "testset-audio-25.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-25.wav",
+      "sha256": "faa1ad3f2e66659fc9f63776b8820f0afbe3fb4958a3da9bf0be52db1d983f3a",
+      "bytes": 505198
+    },
+    {
+      "id": "testset-audio-25.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-25.scv",
+      "sha256": "117c128cbf7abf6497e09afea4caf315a78c483dbe29f8dc3388456838e84697",
+      "bytes": 178
+    },
+    {
+      "id": "testset-audio-26.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-26.wav",
+      "sha256": "d3bc4941e32cdb4b789b59ad2de1a96a1fedd12a9f30e9731a8a501e87b5514d",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-26.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-26.scv",
+      "sha256": "178008bd600d80670f3a19da8e34b56f0ecd83f3ad600d0dd27d20b6012dd561",
+      "bytes": 130
+    },
+    {
+      "id": "testset-audio-27.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-27.wav",
+      "sha256": "787541ec4e9424cb2f754905d920213cc4ab89024601d2b2d259b035b12f041a",
+      "bytes": 278606
+    },
+    {
+      "id": "testset-audio-27.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-27.scv",
+      "sha256": "d4ff72707cee5ab40d7427978f60c7036bbe4549512343e1d01e36d9c1994974",
+      "bytes": 171
+    },
+    {
+      "id": "testset-audio-28.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-28.wav",
+      "sha256": "0f4fcc392c64b0e96c06dcc8e1eda240a1fada1ff5b51f8ea606339ab1e7810b",
+      "bytes": 229454
+    },
+    {
+      "id": "testset-audio-28.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-28.scv",
+      "sha256": "9c2cb73155c4ae9cc103ef8b56603210552d358368b4e8de1be7cacbbbe78405",
+      "bytes": 129
+    },
+    {
+      "id": "testset-audio-29.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-29.wav",
+      "sha256": "dc68d7c5ee7ad02c5c5d9c7dd5b30e8d1205516826438a639c44d51636187192",
+      "bytes": 286798
+    },
+    {
+      "id": "testset-audio-29.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-29.scv",
+      "sha256": "4c0573592d91988f0cac6384d11baa0bdc7c6a9bf5f0065c408ebfdda6f06e56",
+      "bytes": 171
+    },
+    {
+      "id": "testset-audio-30.wav",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-30.wav",
+      "sha256": "af0fc39db6080f65d5b8c9a19aeca04a19d60c503a06fc6f3a875e64e7ac7ebf",
+      "bytes": 330744
+    },
+    {
+      "id": "testset-audio-30.scv",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/testset/testset-audio-30.scv",
+      "sha256": "c704c09babcba5b4a2ebe4d53b936aa85c41310f5b4948eaafe14e5fc1b92a3f",
+      "bytes": 186
+    },
+    {
+      "id": "pyannote-sample.wav",
+      "url": "https://raw.githubusercontent.com/pyannote/pyannote-audio/b749285c5cdd4636b2edc7f766f1352c8dde9369/tutorials/assets/sample.wav",
+      "sha256": "c319b4abca767b124e41432d364fd7df006cb26bb79d09326c487d606a134e6e",
+      "bytes": 960104
+    },
+    {
+      "id": "pyannote-sample.rttm",
+      "url": "https://raw.githubusercontent.com/pyannote/pyannote-audio/b749285c5cdd4636b2edc7f766f1352c8dde9369/tutorials/assets/sample.rttm",
+      "sha256": "d78fe62c69d8e6dcbb42c26adfce83faccb374c5a1e6d987fe37f85f1c173c87",
+      "bytes": 596
+    },
+    {
+      "id": "silero-16k.onnx",
+      "url": "https://raw.githubusercontent.com/snakers4/silero-vad/1e261b036686cd0017d500ee96acd1c4ba572a9d/src/silero_vad/data/silero_vad_16k_op15.onnx",
+      "sha256": "7ed98ddbad84ccac4cd0aeb3099049280713df825c610a8ed34543318f1b2c49",
+      "bytes": 1289603
+    },
+    {
+      "id": "libfvad.tar.gz",
+      "url": "https://codeload.github.com/dpirch/libfvad/tar.gz/532ab666c20d3cfda38bca63abbb0f152706c369",
+      "sha256": "bf639e4a5bc37b1c90e047c42524e80a1d0cecadeb6e0a61a33580fca22a00ab",
+      "bytes": 940253
+    },
+    {
+      "id": "ten-LICENSE",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/LICENSE",
+      "sha256": "03d862b922867b8c3406a0c17791e256ed3d76f197d88c1996c4aebfb79f688e",
+      "bytes": 2239
+    },
+    {
+      "id": "ten-README.md",
+      "url": "https://raw.githubusercontent.com/TEN-framework/ten-vad/22a3bcd4509d0faaa8eef4881e8af5f39c178950/README.md",
+      "sha256": "96fc31c9382066c4b469f14074d006dc5e6c9f99cdd71a208a2d3fe1bff73286",
+      "bytes": 29576
+    },
+    {
+      "id": "silero-LICENSE",
+      "url": "https://raw.githubusercontent.com/snakers4/silero-vad/1e261b036686cd0017d500ee96acd1c4ba572a9d/LICENSE",
+      "sha256": "2e63e9a38b6e8fc0c7bc37ce174caca1862870856c6daf5697cfb785e925520b",
+      "bytes": 1075
+    },
+    {
+      "id": "silero-README.md",
+      "url": "https://raw.githubusercontent.com/snakers4/silero-vad/1e261b036686cd0017d500ee96acd1c4ba572a9d/README.md",
+      "sha256": "cd0ee56c91b8042e62a714c0c94bc8b74dbea127a483e390f8033bb8ec8cec78",
+      "bytes": 9725
+    },
+    {
+      "id": "libfvad-LICENSE",
+      "url": "https://raw.githubusercontent.com/dpirch/libfvad/532ab666c20d3cfda38bca63abbb0f152706c369/LICENSE",
+      "sha256": "78b16d4e803975e0c5d826339c607d0676192a40e2c510c10b2cb4ab4cde416a",
+      "bytes": 1543
+    },
+    {
+      "id": "libfvad-README.md",
+      "url": "https://raw.githubusercontent.com/dpirch/libfvad/532ab666c20d3cfda38bca63abbb0f152706c369/README.md",
+      "sha256": "05dbcf148c00c358b3fbcc510083c7963d70fcd320d8981edd3d1e362d7d6bc7",
+      "bytes": 2949
+    },
+    {
+      "id": "pyannote-LICENSE",
+      "url": "https://raw.githubusercontent.com/pyannote/pyannote-audio/b749285c5cdd4636b2edc7f766f1352c8dde9369/LICENSE",
+      "sha256": "a3b53644a76e70e289b25271b119c0a1aadaaf0db7a16225fb494fdc0e36c32a",
+      "bytes": 1061
+    },
+    {
+      "id": "pyannote-README.md",
+      "url": "https://raw.githubusercontent.com/pyannote/pyannote-audio/b749285c5cdd4636b2edc7f766f1352c8dde9369/README.md",
+      "sha256": "fb790724a0d1768fd0f0654d0f687a778812b6c6a9642a1ff2956debaf492f89",
+      "bytes": 12425
+    }
+  ],
+  "clips": [
+    {
+      "id": "testset-audio-01",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-01.wav",
+      "annotation": "testset-audio-01.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-02",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-02.wav",
+      "annotation": "testset-audio-02.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-03",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-03.wav",
+      "annotation": "testset-audio-03.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-04",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-04.wav",
+      "annotation": "testset-audio-04.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-05",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-05.wav",
+      "annotation": "testset-audio-05.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-06",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-06.wav",
+      "annotation": "testset-audio-06.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-07",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-07.wav",
+      "annotation": "testset-audio-07.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-08",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-08.wav",
+      "annotation": "testset-audio-08.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-09",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-09.wav",
+      "annotation": "testset-audio-09.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-10",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-10.wav",
+      "annotation": "testset-audio-10.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-11",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-11.wav",
+      "annotation": "testset-audio-11.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-12",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-12.wav",
+      "annotation": "testset-audio-12.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-13",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-13.wav",
+      "annotation": "testset-audio-13.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-14",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-14.wav",
+      "annotation": "testset-audio-14.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-15",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-15.wav",
+      "annotation": "testset-audio-15.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-16",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-16.wav",
+      "annotation": "testset-audio-16.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-17",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-17.wav",
+      "annotation": "testset-audio-17.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-18",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-18.wav",
+      "annotation": "testset-audio-18.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-19",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-19.wav",
+      "annotation": "testset-audio-19.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-20",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-20.wav",
+      "annotation": "testset-audio-20.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-21",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-21.wav",
+      "annotation": "testset-audio-21.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-22",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-22.wav",
+      "annotation": "testset-audio-22.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-23",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-23.wav",
+      "annotation": "testset-audio-23.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-24",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-24.wav",
+      "annotation": "testset-audio-24.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-25",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-25.wav",
+      "annotation": "testset-audio-25.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-26",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-26.wav",
+      "annotation": "testset-audio-26.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-27",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-27.wav",
+      "annotation": "testset-audio-27.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-28",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-28.wav",
+      "annotation": "testset-audio-28.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-29",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-29.wav",
+      "annotation": "testset-audio-29.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "testset-audio-30",
+      "dataset": "ten-testset",
+      "audio": "testset-audio-30.wav",
+      "annotation": "testset-audio-30.scv",
+      "format": "ten-scv"
+    },
+    {
+      "id": "pyannote-meeting",
+      "dataset": "pyannote-sample",
+      "audio": "pyannote-sample.wav",
+      "annotation": "pyannote-sample.rttm",
+      "format": "rttm"
+    }
+  ]
+}

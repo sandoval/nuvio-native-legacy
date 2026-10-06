@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "scope": "Three deliberately condition-covering five-minute movie excerpts; not representative of full AVA-Speech, not a verified model-held-out split; no ARM/webOS performance or subtitle alignment claim.",
+  "sources": {
+    "ava-speech": {
+      "paper": "https://arxiv.org/html/1808.00606v2",
+      "url": "https://github.com/cvdfoundation/ava-dataset",
+      "labels_url": "https://s3.amazonaws.com/ava-dataset/annotations/ava_speech_labels_v1.csv",
+      "selection": "First three entries in official filename list with >10 seconds of each of four labels in original movie seconds 900-1200, and source size below 300,000,000 bytes. Selected before detector evaluation.",
+      "note": "Movie media retain their original terms. Singing counts as speech; noise may include music. Sources are full movies, labels use original-movie seconds. Local evaluation only; no redistribution."
+    }
+  },
+  "dependencies": {
+    "libfvad_commit": "532ab666c20d3cfda38bca63abbb0f152706c369",
+    "silero_commit": "1e261b036686cd0017d500ee96acd1c4ba572a9d",
+    "numpy": "2.5.3",
+    "onnxruntime": "1.30.0"
+  },
+  "files": [
+    {
+      "id": "ava_speech_labels_v1.csv",
+      "url": "https://s3.amazonaws.com/ava-dataset/annotations/ava_speech_labels_v1.csv",
+      "bytes": 1635390,
+      "sha256": "9936403f9abcb9e768d1b6889ceeadb6d6797d70c39cf9cf1062cdc2f3577377"
+    },
+    {
+      "id": "ava_speech_file_names_v1.txt",
+      "url": "https://s3.amazonaws.com/ava-dataset/annotations/ava_speech_file_names_v1.txt",
+      "bytes": 2566,
+      "sha256": "dd70457e0caaaab3038cfa981c03692b8592c669a7e51088e3e039274b77460f"
+    },
+    {
+      "id": "-IELREHX_js.mp4",
+      "url": "https://s3.amazonaws.com/ava-dataset/trainval/-IELREHX_js.mp4",
+      "bytes": 125710755,
+      "sha256": "16e8406b54be7d222b9fbedc52473c508aa5a5f2956f00657d8c07f4cd5eecb1"
+    },
+    {
+      "id": "1j20qq1JyX4.mp4",
+      "url": "https://s3.amazonaws.com/ava-dataset/trainval/1j20qq1JyX4.mp4",
+      "bytes": 252209059,
+      "sha256": "d19b3090434387799c96244be52fb1d0809f48cfc87dcf64df53ce03b4c2becb"
+    },
+    {
+      "id": "914yZXz-iRs.mkv",
+      "url": "https://s3.amazonaws.com/ava-dataset/trainval/914yZXz-iRs.mkv",
+      "bytes": 260795587,
+      "sha256": "d61f48b1e8f2bcf203e049ad76f30a3b8668059205fbd6deb288ecea23943ed9"
+    },
+    {
+      "id": "silero-16k.onnx",
+      "url": "https://raw.githubusercontent.com/snakers4/silero-vad/1e261b036686cd0017d500ee96acd1c4ba572a9d/src/silero_vad/data/silero_vad_16k_op15.onnx",
+      "sha256": "7ed98ddbad84ccac4cd0aeb3099049280713df825c610a8ed34543318f1b2c49",
+      "bytes": 1289603
+    },
+    {
+      "id": "libfvad.tar.gz",
+      "url": "https://codeload.github.com/dpirch/libfvad/tar.gz/532ab666c20d3cfda38bca63abbb0f152706c369",
+      "sha256": "bf639e4a5bc37b1c90e047c42524e80a1d0cecadeb6e0a61a33580fca22a00ab",
+      "bytes": 940253
+    },
+    {
+      "id": "silero-LICENSE",
+      "url": "https://raw.githubusercontent.com/snakers4/silero-vad/1e261b036686cd0017d500ee96acd1c4ba572a9d/LICENSE",
+      "sha256": "2e63e9a38b6e8fc0c7bc37ce174caca1862870856c6daf5697cfb785e925520b",
+      "bytes": 1075
+    },
+    {
+      "id": "libfvad-LICENSE",
+      "url": "https://raw.githubusercontent.com/dpirch/libfvad/532ab666c20d3cfda38bca63abbb0f152706c369/LICENSE",
+      "sha256": "78b16d4e803975e0c5d826339c607d0676192a40e2c510c10b2cb4ab4cde416a",
+      "bytes": 1543
+    }
+  ],
+  "clips": [
+    {
+      "id": "-IELREHX_js-0900-1200",
+      "dataset": "ava-speech",
+      "video_id": "-IELREHX_js",
+      "audio": "-IELREHX_js.mp4",
+      "annotation": "ava_speech_labels_v1.csv",
+      "format": "ava-csv",
+      "start_seconds": 900,
+      "duration_seconds": 300,
+      "annotation_origin_seconds": 900
+    },
+    {
+      "id": "1j20qq1JyX4-0900-1200",
+      "dataset": "ava-speech",
+      "video_id": "1j20qq1JyX4",
+      "audio": "1j20qq1JyX4.mp4",
+      "annotation": "ava_speech_labels_v1.csv",
+      "format": "ava-csv",
+      "start_seconds": 900,
+      "duration_seconds": 300,
+      "annotation_origin_seconds": 900
+    },
+    {
+      "id": "914yZXz-iRs-0900-1200",
+      "dataset": "ava-speech",
+      "video_id": "914yZXz-iRs",
+      "audio": "914yZXz-iRs.mkv",
+      "annotation": "ava_speech_labels_v1.csv",
+      "format": "ava-csv",
+      "start_seconds": 900,
+      "duration_seconds": 300,
+      "annotation_origin_seconds": 900
+    }
+  ]
+}

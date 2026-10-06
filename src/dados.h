@@ -22,6 +22,8 @@ void dados_iniciar(const char *dirArte);
 // ser "" se nenhum candidato aceitou escrita — nesse caso gravar e no-op e o
 // log ja disse por que.
 const char *dados_dir(void);
+// Model storage excludes the deployment/package directory fallback.
+int dados_model_persistente(void);
 
 // Monta `dados_dir()/nome` em `dst`. Devolve dst, ou NULL se nao ha pasta.
 char *dados_caminho(char *dst, unsigned tam, const char *nome);

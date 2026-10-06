@@ -1,5 +1,23 @@
 # Sync de legenda por áudio (F06): capacidade por backend, implementação e modelo opcional
 
+Atualização 06/10/2026: a implementação Silero está na branch `subtitle-autosync`,
+empilhada sobre DTS `2a97f7e7`. O ajuste continua desligado por padrão. Produção
+não usa o detector DSP: exige runtime Silero, modelo verificado e fonte PCM.
+O build webOS opcional agora tem decoder auxiliar separado para HTTP Range
+MP4/MKV; não é um tap uMS. Fontes com faixa ambígua ou origem de tempo não
+comprovada são recusadas. Android mantém o tap existente, mas o build padrão
+não inclui ORT e informa indisponibilidade. Samsung continua sem suporte.
+
+O runtime reduzido ARM foi compilado e os testes de host passaram; isso não
+prova funcionamento em TV. O modelo ORT convertido ainda não foi publicado.
+Os casos de legenda real Sintel foram recusados conservadoramente, portanto a
+aceitação de offsets reais ainda não passou. Ver
+[relatório de implementação](../../features/subtitle-autosync/implementation-report.md)
+para matriz, tamanhos, testes e gates de release atuais.
+
+O restante deste documento registra a implementação DSP histórica de
+04/10/2026; as propostas Whisper/ASR abaixo não fazem parte desta entrega.
+
 04/10/2026, branch `f06-audio-sync` (base `50afbae3`). Este documento separa o que foi **provado no código** do que **precisa de TV**. Nada aqui foi medido em aparelho.
 
 ## 1. Matriz de capacidade: o app consegue ler o PCM decodificado do áudio que está tocando?

@@ -343,7 +343,11 @@ static int serve(const char *candidato) {
   return 1;
 }
 
+static int modelPersistente;
+int dados_model_persistente(void) { return modelPersistente; }
+
 void dados_iniciar(const char *dirArte) {
+  modelPersistente = 0;
   char lar[512], envLar[512], arteLar[512];
   int isolado = strcmp(NV_APP_ID, NV_APP_ID_PRODUCTION) != 0;
   const char *env = getenv("NUVIO_DADOS");
@@ -402,6 +406,7 @@ void dados_iniciar(const char *dirArte) {
   for (i = 0; i < n; i++) {
     if (serve(candidatos[i])) {
       snprintf(dir, sizeof dir, "%s", candidatos[i]);
+      modelPersistente = !(dirArte && *dirArte && (!strcmp(candidatos[i], dirArte) || (isolado && !strcmp(candidatos[i], arteLar))));
       printf("[dados] gravando em %s\n", dir);
       fflush(stdout);
       return;

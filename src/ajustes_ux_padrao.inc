@@ -226,3 +226,4 @@
   0, /* rest screen style: Vitrine */
   0, /* showcase titles: Catalogo */
   0, /* clock format: 24 horas */
+  0, 0, /* model retry/remove: actions, no additional enable preference */
