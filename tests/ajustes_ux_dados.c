@@ -336,8 +336,7 @@ static void audioSyncSettings(void) {
   if (!audmodel_supported()) {
     assert(inativa(AJ_LEG_SYNC_AUDIO));
     assert(inativa(AJ_AUDMODEL_RETRY) && inativa(AJ_AUDMODEL_REMOVE));
-    assert(strstr(ajudaOpcao(AJ_LEG_SYNC_AUDIO), "não está disponível") ||
-           strstr(ajudaOpcao(AJ_LEG_SYNC_AUDIO), "não está disponível"));
+    assert(strstr(ajudaOpcao(AJ_LEG_SYNC_AUDIO), "não está disponível"));
     /* A user who has an old saved-on preference must still be able to turn it
      * off after installing a build without the runtime. */
     valor[AJ_LEG_SYNC_AUDIO] = 0;
